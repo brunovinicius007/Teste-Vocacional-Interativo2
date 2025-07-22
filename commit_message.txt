@@ -1,1 +1,1 @@
-Feature: Save results to localStorage
+Fix: Typo in question 19
