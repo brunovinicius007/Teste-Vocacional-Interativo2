@@ -173,6 +173,8 @@
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
             const questionCounter = document.getElementById('questionCounter');
+            const personalInfoSection = document.getElementById('personal-info');
+            const questionnaireSection = document.getElementById('questionnaire');
 
             const categorias = {
                 'exatas': 'Ciências Exatas',
@@ -204,7 +206,7 @@
                 { id: 16, texto: 'Você gosta de trabalhar com crianças e jovens?', pesos: { 'educacao': 3, 'saude': 1, 'humanas': 1 } },
                 { id: 17, texto: 'Você tem facilidade para trabalhar com dados e estatísticas?', pesos: { 'exatas': 3, 'tecnologia': 2, 'negocios': 2 } },
                 { id: 18, texto: 'Você se interessa por questões sociais e políticas?', pesos: { 'humanas': 3, 'educacao': 2, 'negocios': 1 } },
-                { id: 19, texto: 'Você gosta de trabalhar ao ar livre e com a natureza?', pesos: { 'biologicas': 3, 'saude': 1, 'exatas': 1 } },
+                { id: 19, texto: 'Você gosta de trabalhar ao ar livre e com a naturezass?', pesos: { 'biologicas': 3, 'saude': 1, 'exatas': 1 } },
                 { id: 20, texto: 'Você tem interesse em comunicação visual e marketing?', pesos: { 'artes': 2, 'negocios': 2, 'tecnologia': 1 } }
             ];
 
@@ -277,6 +279,7 @@
                 event.preventDefault();
 
                 const formData = new FormData(testForm);
+                const nome = formData.get('nome');
                 const respostas = {};
                 for (const [key, value] of formData.entries()) {
                     const match = key.match(/respostas\[(\d+)\]/);
@@ -301,18 +304,27 @@
                     .map(([categoria, pontuacao]) => ({ categoria, pontuacao }))
                     .sort((a, b) => b.pontuacao - a.pontuacao);
 
-                renderResults(sortedResults);
+                const resultData = {
+                    nome: nome,
+                    resultados: sortedResults
+                };
+
+                localStorage.setItem('vocationalTestResult', JSON.stringify(resultData));
+
+                renderResults(resultData);
+                personalInfoSection.style.display = 'none';
+                questionnaireSection.style.display = 'none';
                 resultsSection.style.display = 'block';
                 resultsSection.scrollIntoView({ behavior: 'smooth' });
             });
 
-            function renderResults(sortedResults) {
+            function renderResults(resultData) {
                 resultsContainer.innerHTML = '';
-                const topResult = sortedResults[0];
+                const topResult = resultData.resultados[0];
 
                 const resultTitle = document.createElement('h3');
                 resultTitle.className = 'text-2xl font-bold text-gray-800 mb-2';
-                resultTitle.textContent = `Sua principal vocação é: ${categorias[topResult.categoria]}`;
+                resultTitle.textContent = `Olá, ${resultData.nome}! Sua principal vocação é: ${categorias[topResult.categoria]}`;
                 resultsContainer.appendChild(resultTitle);
 
                 const resultDescription = document.createElement('p');
@@ -320,7 +332,7 @@
                 resultDescription.textContent = 'Aqui está o detalhamento da sua pontuação:';
                 resultsContainer.appendChild(resultDescription);
 
-                sortedResults.forEach(result => {
+                resultData.resultados.forEach(result => {
                     const resultItem = document.createElement('div');
                     resultItem.className = 'mb-4';
                     
@@ -332,7 +344,7 @@
                     const itemBarContainer = document.createElement('div');
                     itemBarContainer.className = 'progress-bar-container';
                     const itemBar = document.createElement('div');
-                    const maxScore = sortedResults[0].pontuacao;
+                    const maxScore = resultData.resultados[0].pontuacao;
                     const percentage = (result.pontuacao / maxScore) * 100;
                     itemBar.className = 'progress-bar-fill';
                     itemBar.style.width = `${percentage}%`;
@@ -341,10 +353,32 @@
 
                     resultsContainer.appendChild(resultItem);
                 });
+
+                const retakeButton = document.createElement('button');
+                retakeButton.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 shadow-lg text-lg mt-6';
+                retakeButton.innerHTML = '<i class="fas fa-redo mr-2"></i>Fazer o teste novamente';
+                retakeButton.addEventListener('click', () => {
+                    localStorage.removeItem('vocationalTestResult');
+                    window.location.reload();
+                });
+                resultsContainer.appendChild(retakeButton);
             }
 
-            renderQuestions();
-            updateProgress();
+            function checkForSavedResult() {
+                const savedResult = localStorage.getItem('vocationalTestResult');
+                if (savedResult) {
+                    const resultData = JSON.parse(savedResult);
+                    personalInfoSection.style.display = 'none';
+                    questionnaireSection.style.display = 'none';
+                    renderResults(resultData);
+                    resultsSection.style.display = 'block';
+                } else {
+                    renderQuestions();
+                    updateProgress();
+                }
+            }
+
+            checkForSavedResult();
         });
     </script>
 </body>
